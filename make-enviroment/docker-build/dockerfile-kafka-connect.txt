@@ -1,0 +1,116 @@
+
+## reference from  https://github.com/lensesio/fast-data-dev/blob/fdd/main/Dockerfile
+
+
+FROM confluentinc/cp-kafka-connect:6.0.0
+
+LABEL maintainer="houhx"
+
+USER root
+
+## ÉvÉâÉOÉCÉìÇÃï€ë∂êÊ
+ARG KAFKA_CONNECT_PLUGINS_PATH=/usr/share/confluent-hub-components
+
+ENV CONNECT_REST_PORT="80"
+#ENV CONNECT_PLUGIN_PATH="${KAFKA_CONNECT_PLUGINS_PATH}"
+ENV CONNECT_KEY_CONVERTER="io.confluent.connect.avro.AvroConverter"
+ENV CONNECT_VALUE_CONVERTER="io.confluent.connect.avro.AvroConverter"
+ENV CONNECT_INTERNAL_KEY_CONVERTER="org.apache.kafka.connect.json.JsonConverter"
+ENV CONNECT_INTERNAL_VALUE_CONVERTER="org.apache.kafka.connect.json.JsonConverter"
+
+EXPOSE 80
+
+RUN yum update && yum install -y unzip wget file
+
+#################
+# Add Third Party Connectors/
+#################
+
+## Twitter
+ARG TWITTER_CONNECTOR_URL="https://archive.landoop.com/third-party/kafka-connect-twitter/kafka-connect-twitter-0.1-master-33331ea-connect-1.0.0-jar-with-dependencies.jar"
+RUN mkdir -p ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-twitter \
+    && wget "$TWITTER_CONNECTOR_URL" -P ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-twitter
+
+
+## Kafka Connect JDBC
+ARG KAFKA_CONNECT_JDBC_VERSION=5.5.2
+ARG KAFKA_CONNECT_JDBC_URL="https://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/${KAFKA_CONNECT_JDBC_VERSION}/kafka-connect-jdbc-${KAFKA_CONNECT_JDBC_VERSION}.jar"
+RUN wget "$KAFKA_CONNECT_JDBC_URL"  -O ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-jdbc.jar
+
+
+## Kafka Connect ELASTICSEARCH
+ARG KAFKA_CONNECT_ELASTICSEARCH_VERSION=5.5.1
+ARG KAFKA_CONNECT_ELASTICSEARCH_URL="https://packages.confluent.io/maven/io/confluent/kafka-connect-elasticsearch/${KAFKA_CONNECT_ELASTICSEARCH_VERSION}/kafka-connect-elasticsearch-${KAFKA_CONNECT_ELASTICSEARCH_VERSION}.jar"
+RUN wget "$KAFKA_CONNECT_ELASTICSEARCH_URL" -O ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-elasticsearch.jar
+
+
+## Kafka Connect HDFS
+ARG KAFKA_CONNECT_HDFS_VERSION=5.2.4
+ARG KAFKA_CONNECT_HDFS_URL="https://packages.confluent.io/maven/io/confluent/kafka-connect-hdfs/${KAFKA_CONNECT_HDFS_VERSION}/kafka-connect-hdfs-${KAFKA_CONNECT_HDFS_VERSION}.jar"
+RUN wget "$KAFKA_CONNECT_HDFS_URL" -O ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-hdfs.jar 
+
+## Kafka Connect S3
+ARG KAFKA_CONNECT_STORAGE_VERSION=5.5.2
+ARG KAFKA_CONNECT_S3_VERSION=5.5.2
+ARG KAFKA_CONNECT_S3_URL="https://packages.confluent.io/maven/io/confluent/kafka-connect-s3/${KAFKA_CONNECT_STORAGE_VERSION}/kafka-connect-s3-${KAFKA_CONNECT_STORAGE_VERSION}.jar"
+RUN wget "$KAFKA_CONNECT_S3_URL" -O ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-s3.jar 
+
+ARG KAFKA_CONNECT_STORAGE_CORE_URL="https://packages.confluent.io/maven/io/confluent/kafka-connect-storage-core/${KAFKA_CONNECT_STORAGE_VERSION}/kafka-connect-storage-core-${KAFKA_CONNECT_STORAGE_VERSION}.jar"
+RUN wget "$KAFKA_CONNECT_STORAGE_CORE_URL" -O /usr/share/java/kafka/kafka-connect-storage-core.jar 
+
+ARG KAFKA_CONNECT_STORAGE_COMMON_URL="https://packages.confluent.io/maven/io/confluent/kafka-connect-storage-common/${KAFKA_CONNECT_STORAGE_VERSION}/kafka-connect-storage-common-${KAFKA_CONNECT_STORAGE_VERSION}.jar"
+RUN wget "$KAFKA_CONNECT_STORAGE_COMMON_URL" -O /usr/share/java/kafka/kafka-connect-storage-common.jar 
+
+RUN wget https://jdbc.postgresql.org/download/postgresql-9.4.1212.jar -O /usr/share/java/kafka/postgresql-9.4.1212.jar 
+
+# Kafka Connect Couchbase
+ARG KAFKA_CONNECT_COUCHBASE_VERSION=3.2.2
+ARG KAFKA_CONNECT_COUCHBASE_URL="http://packages.couchbase.com/clients/kafka/${KAFKA_CONNECT_COUCHBASE_VERSION}/kafka-connect-couchbase-${KAFKA_CONNECT_COUCHBASE_VERSION}.zip"
+RUN wget $DEVARCH_USER $DEVARCH_PASS "$KAFKA_CONNECT_COUCHBASE_URL" \
+         -O /couchbase.zip \
+    && mkdir -p /couchbase ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-couchbase \
+    && unzip /couchbase.zip -d /couchbase \
+    && cp -ax /couchbase/kafka-connect-couchbase-${KAFKA_CONNECT_COUCHBASE_VERSION}/* \
+          ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-couchbase \
+    && chown -R root:root ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-couchbase \
+    && rm -rf /couchbase.zip /couchbase
+
+# Kafka Connect Debezium MongoDB / MySQL / Postgres / MsSQL
+ARG KAFKA_CONNECT_DEBEZIUM_MONGODB_VERSION=1.0.1.Final
+ARG KAFKA_CONNECT_DEBEZIUM_MONGODB_URL="https://search.maven.org/remotecontent?filepath=io/debezium/debezium-connector-mongodb/${KAFKA_CONNECT_DEBEZIUM_MONGODB_VERSION}/debezium-connector-mongodb-${KAFKA_CONNECT_DEBEZIUM_MONGODB_VERSION}-plugin.tar.gz"
+ARG KAFKA_CONNECT_DEBEZIUM_MYSQL_VERSION=1.0.1.Final
+ARG KAFKA_CONNECT_DEBEZIUM_MYSQL_URL="https://search.maven.org/remotecontent?filepath=io/debezium/debezium-connector-mysql/${KAFKA_CONNECT_DEBEZIUM_MYSQL_VERSION}/debezium-connector-mysql-${KAFKA_CONNECT_DEBEZIUM_MYSQL_VERSION}-plugin.tar.gz"
+ARG KAFKA_CONNECT_DEBEZIUM_POSTGRES_VERSION=1.0.1.Final
+ARG KAFKA_CONNECT_DEBEZIUM_POSTGRES_URL="https://search.maven.org/remotecontent?filepath=io/debezium/debezium-connector-postgres/${KAFKA_CONNECT_DEBEZIUM_POSTGRES_VERSION}/debezium-connector-postgres-${KAFKA_CONNECT_DEBEZIUM_POSTGRES_VERSION}-plugin.tar.gz"
+ARG KAFKA_CONNECT_DEBEZIUM_SQLSERVER_VERSION=1.0.1.Final
+ARG KAFKA_CONNECT_DEBEZIUM_SQLSERVER_URL="https://search.maven.org/remotecontent?filepath=io/debezium/debezium-connector-sqlserver/${KAFKA_CONNECT_DEBEZIUM_SQLSERVER_VERSION}/debezium-connector-sqlserver-${KAFKA_CONNECT_DEBEZIUM_SQLSERVER_VERSION}-plugin.tar.gz"
+RUN mkdir -p ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-debezium-{mongodb,mysql,postgres,sqlserver} \
+    && wget "$KAFKA_CONNECT_DEBEZIUM_MONGODB_URL" -O /debezium-mongodb.tgz \
+    && file /debezium-mongodb.tgz \
+    && tar -xf /debezium-mongodb.tgz \
+           --owner=root --group=root --strip-components=1 \
+           -C  ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-debezium-mongodb \
+    && wget "$KAFKA_CONNECT_DEBEZIUM_MYSQL_URL" -O /debezium-mysql.tgz \
+    && file /debezium-mysql.tgz \
+    && tar -xf /debezium-mysql.tgz \
+           --owner=root --group=root --strip-components=1 \
+           -C  ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-debezium-mysql \
+    && wget "$KAFKA_CONNECT_DEBEZIUM_POSTGRES_URL" -O /debezium-postgres.tgz \
+    && file /debezium-postgres.tgz \
+    && tar -xf /debezium-postgres.tgz \
+           --owner=root --group=root --strip-components=1 \
+           -C  ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-debezium-postgres \
+    && wget "$KAFKA_CONNECT_DEBEZIUM_SQLSERVER_URL" -O /debezium-sqlserver.tgz \
+    && tar -xf /debezium-sqlserver.tgz \
+           --owner=root --group=root --strip-components=1 \
+           -C  ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-debezium-sqlserver \
+    && rm -rf /debezium-{mongodb,mysql,postgres,sqlserver}.tgz
+
+# Kafka Connect Splunk
+ARG KAFKA_CONNECT_SPLUNK_VERSION="1.1.0"
+ARG KAFKA_CONNECT_SPLUNK_URL="https://github.com/splunk/kafka-connect-splunk/releases/download/v${KAFKA_CONNECT_SPLUNK_VERSION}/splunk-kafka-connect-v${KAFKA_CONNECT_SPLUNK_VERSION}.jar"
+RUN mkdir -p ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-splunk \
+    && wget "$KAFKA_CONNECT_SPLUNK_URL" \
+       -O ${KAFKA_CONNECT_PLUGINS_PATH}/kafka-connect-splunk/splunk-kafka-connect-v${KAFKA_CONNECT_SPLUNK_VERSION}.jar
+
+
