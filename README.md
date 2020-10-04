@@ -167,7 +167,7 @@ zookeeper               /etc/confluent/docker/run   Up               0.0.0.0:218
 
   
 
-### 2.2 kafka-connect 検証     ！！！2种模式！！！！
+### 2.2 kafka-connect 検証
 
 <u>Connectの設定はKafkaのCofingフォルダ()に設定することができるが、便利上では、kafka-connect-uiを通じて設定する。画面で設定値を修正して、curlコマンドを生成する（Rest-APIで）</u>
 
@@ -248,38 +248,44 @@ docker exec -it broker1 kafka-console-consumer --bootstrap-server=broker1:29091 
 
 #### 2.2.1 DB-To-DB
 
-- テーブル用意
+##### ア テーブル用意
 
-  ```sql
-  ##Sourceテーブル
-  CREATE TABLE person(
-     pid SERIAL  PRIMARY KEY    NOT NULL,
-     name           CHAR(20)    NOT NULL,
-     age            INT         NOT NULL,
-     address        CHAR(50),
-     PRIMARY KEY (pid)
-  );
-  
-  ##Sinkテーブル
-  CREATE TABLE kafkaperson(
-     pid SERIAL PRIMARY KEY     NOT NULL,
-     name           CHAR(20)    NOT NULL,
-     age            INT         NOT NULL,
-     address        CHAR(50)
-  );
-  
-  ```
+```sql
+CREATE DATABASE inputdatabase;
+CREATE DATABASE outputdatabase;
 
 
+##Sourceテーブル
+CREATE TABLE person(
+   pid SERIAL  PRIMARY KEY    NOT NULL,
+   name           CHAR(20)    NOT NULL,
+   age            INT         NOT NULL,
+   address        CHAR(50),
+   PRIMARY KEY (pid)
+);
 
-- rrew
+##Sinkテーブル
+CREATE TABLE kafkaperson(
+   pid SERIAL PRIMARY KEY     NOT NULL,
+   name           CHAR(20)    NOT NULL,
+   age            INT         NOT NULL,
+   address        CHAR(50)
+);
+
+```
+
+
+
+##### イ Source Connector確認
+
+- Source Connector定義
 
   ```json
   {
     "name": "jdbc-source-Connector",
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
     "tasks.max": "1",
-    "connection.url": "jdbc:postgresql://postgres-server:5432/postgres",
+    "connection.url": "jdbc:postgresql://postgres-server:5432/inputdatabase",
     "mode": "incrementing",
     "incrementing.column.name": "pid",
     "topic.prefix": "test-postgresql-jdbc-",
@@ -287,44 +293,96 @@ docker exec -it broker1 kafka-console-consumer --bootstrap-server=broker1:29091 
     "connection.password": "postgres",
     "table.whitelist": "person"
   }
+  ```
+
+- 疎通確認
+
+  ```bash
+  ## consumerを起動する前に、２レコードを追加する
+  INSERT into person(name , age , address) values ('name111' , 11 , 'address 123-23') ;
+  INSERT into person(name , age , address) values ('name222' , 22 , 'address 123-23') ;
   
+  ## consumer起動(データがちょっとおかしい　データタイプの関係かも)　ToDo　
+  docker exec -it broker1 kafka-console-consumer --bootstrap-server=broker1:29091 --topic=test-postgresql-jdbc-person  --from-beginning
+  (name111             daddress 123-23
+  (name222             ,daddress 123-23
   
-  {
-    "name": "Jdbc-Sink-Connector",
-    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
-    "topics": "test-postgresql-jdbc-person",
-    "tasks.max": 1,
-    "connection.url": "jdbc:postgresql://postgres-server:5432/postgres",
-    "connection.user": "postgres",
-    "connection.password": "postgres",
-    "table.name.format": "kafkaperson",
-    "auto.create": "false",
-    "insert.mode": "upsert",
-    "pk.mode": "record_value",
-    "pk.fields":"pid"
-  }
+  ## ２レコードを追加する
+  INSERT into person(name , age , address) values ('name333' , 33 , 'address 123-23') ;
+  INSERT into person(name , age , address) values ('name444' , 44 , 'address 123-23') ;
   
-  
-  docker exec -it broker1 kafka-console-consumer --bootstrap-server=broker3:29093 --topic=test-postgresql-jdbc-person
-  
-   
-   INSERT into person(name , age , address) values ('name' , 23 , 'fwerwrqw') ;
-   
+  ## しばらくすると、データ表示する
+  docker exec -it broker1 kafka-console-consumer --bootstrap-server=broker1:29091 --topic=test-postgresql-jdbc-person  --from-beginning
+  (name111             daddress 123-23
+  (name222             ,daddress 123-23
+  (name333             Bdaddress 123-23
+  (name444             Xdaddress 123-23
   ```
 
   
 
-https://blog.csdn.net/helihongzhizhuo/article/details/80335931
+```
+psql -h kafka-1 -p 5432 -d testdb -U connectuser -c "INSERT INTO test_table(seq, item) VALUES (3, 'banana');"
+```
 
+##### ウ Sink Connector確認
 
+- Sink Connector定義
+
+  Sink Connector定義を追加した後に、outputdatabaseにテーブルにデータが自動的に同期化とする　
+
+  ```json
+  {
+      "name": "Jdbc-Sink-Connector",
+      "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+      "topics": "test-postgresql-jdbc-person",
+      "tasks.max": 1,
+      "connection.url": "jdbc:postgresql://postgres-server:5432/outputdatabase",
+      "connection.user": "postgres",
+      "connection.password": "postgres",
+      "table.name.format": "kafkaperson",
+      "auto.create": "false",
+      "insert.mode": "upsert",
+      "pk.mode": "record_value",
+      "pk.fields":"pid"
+  }
+  
+  ## テーブル自動作成の場合(作成したテーブルは：test-postgresql-jdbc-person)　ToDo　自動作成したテーブル
+  {
+      "name": "Jdbc-Sink-Connector",
+      "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+      "topics": "test-postgresql-jdbc-person",
+      "tasks.max": 1,
+      "connection.url": "jdbc:postgresql://postgres-server:5432/outputdatabase",
+      "connection.user": "postgres",
+      "connection.password": "postgres",
+      "auto.create": "auto",
+      "insert.mode": "upsert",
+      "auto.create": "true",
+      "pk.mode": "record_value",
+      "pk.fields":"pid"
+  }
+  ```
+
+  
 
 ### 2.3 kafka-stream 検証
 
+https://kafka.apache.org/26/documentation/streams/quickstart
 
 
 
+![kafka-all](.\image\kafka-all.png)
 
 
+
+# ９９． 今後確認
+
+- メッセージを生成する際に、異なるPartitionに格納することについて、クライアント側で実装している？？？　どのPartitionに追加するかだけ決めるか？
+- ConnectSourceはどのような技術を利用して実現しているか？　　File　DB
+  - File:  FileStreamSourceConnector.java  COREソースはFileStreamSourceTask.javaであり、そこに、ファイルを読んでいる、読んでいるデータをRecorderとして作成して、Brokerへ送信する。
+  - DB：　　おそらく、pkやTimeStampで更新・増加の分を抽出して、レコード作成するか　　Deleteはどうなるか？
+- ConnectでInsertは行けた、Update、Deleteは？
 
 
 
