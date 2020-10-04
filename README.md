@@ -383,8 +383,20 @@ https://kafka.apache.org/26/documentation/streams/quickstart
   - File:  FileStreamSourceConnector.java  COREソースはFileStreamSourceTask.javaであり、そこに、ファイルを読んでいる、読んでいるデータをRecorderとして作成して、Brokerへ送信する。
   - DB：　　おそらく、pkやTimeStampで更新・増加の分を抽出して、レコード作成するか　　Deleteはどうなるか？
 - ConnectでInsertは行けた、Update、Deleteは？
+- REST + Topic  UI
 
 
+
+
+
+★★★
+
+If having `"CONNECTIVITY ERROR" problems` make sure the file `kafka-rest.properties` has CORS enabled. To enable CORS add the following configuration to that file, and restart the backend Kafka-Rest
+
+```
+access.control.allow.methods=GET,POST,PUT,DELETE,OPTIONS
+access.control.allow.origin=*
+```
 
 
 

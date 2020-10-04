@@ -188,40 +188,38 @@ services:
       CONNECT_URL: "http://kafka-connect:8083"
 
 
-#  kafka-rest:
-#    image: confluentinc/cp-kafka-rest:6.0.0
-#    hostname: kafka-rest
-#    container_name: kafka-rest
-#    depends_on:
-#      - broker1
-#      - broker2
-#      - broker3
-#      - kafka-schema-registry
-#    ports:
-#      - 9003:8082
-#    environment:
-#      KAFKA_REST_HOST_NAME: kafka-rest
-#      KAFKA_REST_BOOTSTRAP_SERVERS: "broker1:29091,broker2:29092,broker3:29093"
-#      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
-#      KAFKA_REST_LISTENERS: "http://kafka-rest:8082"
-#      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://kafka-schema-registry:8081'
-
-#  kafka-topics-ui:
-#    image: landoop/kafka-topics-ui:latest
-#    hostname: kafka-topics-ui
-#    container_name: kafka-topics-ui
-#    depends_on:
-#      - zookeeper
-#      - kafka-rest
-#    ports:
-#      - 9002:8000
-#    environment:
-#      KAFKA_REST_PROXY_URL: "https://kafka-rest-proxy-host:port"
-#      PROXY: false
+  kafka-rest:
+    image: confluentinc/cp-kafka-rest:6.0.0
+    hostname: kafka-rest
+    container_name: kafka-rest
+    depends_on:
+      - broker1
+      - broker2
+      - broker3
+      - kafka-schema-registry
+    ports:
+      - 9002:8082
+    environment:
+      KAFKA_REST_HOST_NAME: kafka-rest
+      KAFKA_REST_BOOTSTRAP_SERVERS: "broker1:29091,broker2:29092,broker3:29093"
+#      KAFKA_REST_LISTENERS: "http://0.0.0.0:9002"
+      KAFKA_REST_LISTENERS: "http://kafka-rest:9002"
+      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://kafka-schema-registry:8081'
 
 
-
-
+  kafka-topics-ui:
+    image: landoop/kafka-topics-ui:latest
+    hostname: kafka-topics-ui
+    container_name: kafka-topics-ui
+    depends_on:
+      - zookeeper
+      - kafka-rest
+    ports:
+      - 9003:8000
+    environment:
+      KAFKA_REST_PROXY_URL: "http://kafka-rest:9002"
+      PROXY: "true"
+##  been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
 
 
 
