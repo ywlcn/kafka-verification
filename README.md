@@ -44,7 +44,7 @@ zookeeper               /etc/confluent/docker/run   Up               0.0.0.0:218
 
 - Kafka-connect確認
 
-![kafka-connect](.\image\kafka-connect.png)
+![kafka-connect](/image/kafka-connect.png)
 
 - 色々なConnectが追加されていること
 
