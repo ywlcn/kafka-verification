@@ -48,19 +48,19 @@ zookeeper               /etc/confluent/docker/run   Up               0.0.0.0:218
 
 - 色々なConnectが追加されていること
 
-![kafka-connect-new](.\image\kafka-connect-new.png)
+![kafka-connect-new](/image/kafka-connect-new.png)
 
 - Topic情報の確認
 
-![](.\image\kafka-manage.png)
+![kafka-manage](/image/kafka-manage.png)
 
 - 作成したClusterを追加する
 
-![kafka-manage-add-cluster](.\image\kafka-manage-add-cluster.png)
+![kafka-manage-add-cluster](/image/kafka-manage-add-cluster.png)
 
 - 追加したClusterの情を確認できること
 
-![kafka-manage-cluster-info](.\image\kafka-manage-cluster-info.png)
+![kafka-manage-cluster-info](/image/kafka-manage-cluster-info.png)
 
 
 
@@ -171,7 +171,7 @@ zookeeper               /etc/confluent/docker/run   Up               0.0.0.0:218
 
 <u>Connectの設定はKafkaのCofingフォルダ()に設定することができるが、便利上では、kafka-connect-uiを通じて設定する。画面で設定値を修正して、curlコマンドを生成する（Rest-APIで）</u>
 
-![File-To-File](.\image\File-To-File.png)
+![File-To-File](/image/File-To-File.png)
 
 #### 2.2.1 File-To-File
 
@@ -372,7 +372,7 @@ https://kafka.apache.org/26/documentation/streams/quickstart
 
 
 
-![kafka-all](.\image\kafka-all.png)
+![kafka-all](/image/kafka-all.png)
 
 
 
